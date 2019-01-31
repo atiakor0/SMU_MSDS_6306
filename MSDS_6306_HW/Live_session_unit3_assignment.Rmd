@@ -1,0 +1,150 @@
+---
+title: "Live Session Unit_3 Assignment"
+author: "Audrene Tiakor"
+date: "January 27, 2019"
+output: 
+html_document:
+  keep.html=True
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Question 1: GitHub Cloning (On to Local Machine)
+### Steps:
+
+1. Type the following url into browser:
+2. https://github.com/caesar0301/awesome-public-datasets
+3. Under the repository name, click clone or download.
+4. In the clone, in the HTTPS section, copy the clone URL for the repository.
+   Open Git Bash.
+5. Change the current working directory to the location where you want the cloned    directory to be (i.e.)
+6. Type command 'git clone', then past the URL from step 2. It should look like     this: $ git clone https://github.com/awesomedata/awesome-public-datasets.git
+   Now you should have a cloned copy of the files in the place where you set your    current working directory.
+
+#Question 2: Data Summary
+### a.
+#### Read in the csv file 'titanic.csv, assign it to 'df'
+
+```{r read_table, include=TRUE}
+setwd("C:\\Users\\Audrene\\Desktop\\SMU_MSDS_PROGRAM\\Term1_spring2019\\MSDS6306\\HW\\Live_session_3\\awesome-public-datasets\\Datasets") 
+df <- read.table(file = "titanic.csv", header = T, sep = ",")
+```
+
+###b.
+#### Output total number of females and males with a frequency plot
+
+```{r sumary, include=TRUE}
+summary(df$Sex)
+table(df$Sex)
+barplot(table(df$Sex), main= "Sex of Passengers On the Titanic", xlab = "Sex", ylab = "Frequency")
+
+```
+
+###c.
+#### Application of the 'apply' function for multiple columns
+
+```{r apply, include=TRUE}
+sapply(df[,c("Age","Fare", "Survived")],mean, na.rm = TRUE)
+
+```
+
+#Question 3: Function Building
+
+*First need to read in the data set sleep_data_01.csv (found at http://talklab.psy.gla.ac.uk/L1_labs/lab_1/homework/index.html)
+
+```{r sleep, include=TRUE}
+setwd("C:\\Users\\Audrene\\Desktop\\SMU_MSDS_PROGRAM\\Term1_spring2019\\MSDS6306\\HW\\Live Session Unit 3 Assignment")
+sleep <-read.csv(file = "sleep_data_01.csv", header = T, sep = ",")
+```
+*We need to create a function(x), that when out data sleep is read into it, will return MedianAge, SelfEsteem, SE_SD, and DurationRange. Here are the steps:
+
+1. Create objects for the following: median Age, minimum and maximum duration of sleep, mean and standard deviation of RSES:
+
+2. Create 'data.frame' Object Called 'report':
+
+3. Change Column Names of 'report':
+
+4. Round Numerical Outputs in 'report' to 2 digits
+
+##FINAL RESULT
+```{r funtion(x), include=TRUE}
+sleep.function <- function(x) {
+  
+  med.age.sleep = median(x$Age,na.rm=TRUE)
+  max.sleep.duration = max(x$Duration, na.rm=TRUE)
+  min.sleep.duration = min(x$Duration, na.rm=TRUE)
+  DurationRange = max.sleep.duration - min.sleep.duration 
+  mean.RSES.sleep = mean(x$RSES, na.rm=TRUE)
+  sd.RSES.sleep = sd(x$RSES, na.rm = TRUE)
+  report <- data.frame(med.age.sleep, mean.div.5= mean.RSES.sleep/5, sd.div.5 = sd.RSES.sleep/5, sleep.range = max.sleep.duration - min.sleep.duration)
+  names(report)[1] <- paste("MedianAge")
+  names(report)[2] <- paste("SelfEsteem")
+  names(report)[3] <- paste("SE_SD")
+  names(report)[4] <- paste("DurationRange")
+  report = round(report, digits =2)
+  return(report)
+  
+}
+sleep.function(sleep)
+```
+#Question 4: FiveThirtyEight Data
+
+###a. Install the fivethirtyeight package:
+```{r install, include=TRUE}
+library(fivethirtyeight)
+```
+
+###b. Assign 2nd Data Set to 'df':
+*Note: "college_recent_grads" is the 22nd data set in package fivethirtyeight
+```{r df, include=TRUE}
+data("college_recent_grads")
+df<- college_recent_grads
+
+```
+###c. Write Out URL in a Comment
+* Use the following code to find the URL:
+```{r vignette, include=TRUE}
+vignette("fivethirtyeight", package = "fivethirtyeight")
+```
+* https://fivethirtyeight.com/features/the-economic-guide-to-picking-a-college-major/
+
+
+###d. Dimensions and Column Names for 'df':
+```{r col_dim, include=TRUE}
+dim(df)
+names(df)
+
+```
+#Question 5: Data Summary
+###a. Number of Columns and Column Names for 'df':
+
+```{r names, ECHO=TRUE}
+colnames(df)
+ncol(df)
+```
+
+###b. Major Count
+*Want to generate a count of each major category in the data frame 'df':
+```{r count, ECHO=TRUE}
+library(plyr)
+ major_count<- count(df, "major_category")
+```
+
+###c. Barplot of 'major_count'
+*We want to label the x and y axis, label the title with something informative, and flip the barplot horizontally:
+```{r barplot, ECHO=TRUE}
+library(ggplot2)
+ ggplot(data=major_count, aes(x = major_category, y=freq))+geom_bar(stat="identity", color = "blue", fill="blue")+coord_flip()+ggtitle("Frequency of Major Categories")
+```
+###d. Write the fivethirtyeight data to a csv file, without row labels:
+
+save<-write.csv(df, file = "fivethiertyeight.csv",row.names=FALSE, na="")
+
+
+
+
+# GitHub Link 
+https://github.com/atiakor0/SMU_MSDS_6306.git
+
+

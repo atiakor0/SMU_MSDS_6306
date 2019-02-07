@@ -1,0 +1,122 @@
+---
+title: "Live Session Unit 04 Assignment"
+author: "Audrene Tiakor"
+date: "February 5, 2019"
+output: html_document
+---
+
+```{r setup, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Question 1: Harry Potter Cast (50%)
+
+##a. Website URL
+*http://www.imbdb.com/title/tt1201607/fullcredits?ref_=tt_ql_l.
+
+##b. Scrape page with R package and make it a data frame
+
+### First load the necessary packages to scrape the webpage:
+```{r libraries}
+library(XML)
+library(dplyr)
+library(tidyr)
+library(stringi)
+library(rvest)
+library(ggplot2)
+library(RCurl)
+
+```
+### Taking the table of the Cast in order of crediting and puting it in a data frame:
+
+```{r scrapping}
+harryp<-read_html("https://www.imdb.com/title/tt1201607/fullcredits?ref_=tt_ql_l")
+harryp_table<-html_nodes(harryp, "table")
+harryp_cast<-html_table(harryp_table)
+harryp_cast2<-data.frame(harryp_cast[3])
+
+```
+##c. Clean up the table:
+### Delete the first row in data frame b/c it is blank:
+
+```{r delete_1st_row, echo=TRUE}
+harryp_cast2 <- harryp_cast2[-1, ]
+```
+### Delete columns 'X1' and 'X3' because we don't need those:
+```{r trash_columns, echo=TRUE}
+names(harryp_cast2)
+harryp_cast3<-harryp_cast2[,c(2,4)]
+
+```
+### Rename 'X2' and 'X4' to 'Actor' and 'Character':
+
+```{r rename, echo=TRUE}
+names(harryp_cast3) <- c("Actor", "Character")
+```
+### Split 'Actor' column into 'Firstname' and 'Surname':
+```{r split, echo=TRUE}
+harryp_cast4 <- harryp_cast3 %>% separate(col = Actor, into = c("FirstName", "Surname"), sep = " (?=[^ ]+$)")
+
+```
+### Delete row with observation 'Rest of cast listed alphabetically':
+```{r delete, echo=TRUE}
+harryp_cast4 <- harryp_cast4[-92, ]
+
+```
+### Replace Mr. Warwick two characters with a neater listed name:
+```{r name_replace, echo=TRUE}
+harryp_cast4[10,3]<-'Griphook/Professor Filious Flitwick'
+
+```
+
+##e. Present the first 10 rows of the data frame:
+```{r frame, echo=TRUE}
+head(harryp_cast4,10)
+
+```
+#Question 2: SportsBall (50%)
+
+##a. Website URL
+*http://www.espn.com/nba/team/stats/_/name/sa/san-antonio-spurs.
+
+##b. Scrape page with R package and make it a data frame
+### First load the necessary packages to scrape the webpage:
+```{r libraries_again}
+library(XML)
+library(dplyr)
+library(tidyr)
+library(stringi)
+library(rvest)
+library(ggplot2)
+library(RCurl)
+
+```
+
+```{r scrapping_2}
+stars<-read_html("http://www.espn.com/nba/team/stats/_/name/sa/san-antonio-spurs")
+stars_table<-html_nodes(stars, "table")
+stars_df<-html_table(stars_table, fill = TRUE)
+stars_names<-data.frame(stars_df[2])
+stars_stats<-data.frame(stars_df[8])
+name_stats<-cbind(stars_names, stars_stats)
+
+```
+##c. Clean up the table:
+### Split column name into two columns: "Name" and "Position":
+```{r split_2}
+shooting.stats <- name_stats %>% separate(col = "Name", into = c("Player", "Position"), sep = " (?=[^ ]+$)")
+head(shooting.stats)
+```
+### Delete the totals row in the table:
+```{r delete_2}
+shooting.stats <- shooting.stats[-c(16),]
+
+```
+##d. Create colorful bar chart that shows 'Field Goals Percentage Per Game' for each player
+```{r colorful_plot}
+pl <- ggplot(shooting.stats, aes(x=Player,y=`FG.`,color=Position, fill=Position)) + geom_bar(stat="identity") +
+  ggtitle("Field Goal % per Game by Player (San Antonio Spurs)") + xlab("Player Name") + ylab("Field Goal % per Game") +
+  coord_flip() 
+print (pl)
+
+```

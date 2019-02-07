@@ -1,0 +1,73 @@
+---
+title: "Live Session Unit 2 Assignment"
+author: "Audrene Tiakor"
+date: "January 20, 2019"
+output: html_document
+---
+---
+title: "Unit 02 Live Session Assignment"
+author: "Audrene Tiakor"
+date: "January 20, 2019"
+output: 
+html_document:
+  keep.md = true 
+
+---
+
+
+# What is a basic workflow for reproducible research?
+The basic workflow for reproducible research is data gathering, data analysis, and results presentaion.
+
+# What are five practical tips for making research reproducible?
+The five practical tips for making research reproducible are:
+1. Document Everything.
+2. Everything is a (text) file.
+3. All files should be human readable.
+4. Explicitly tie your files together.
+5. Have a plan to organize, store, and make your files available. 
+
+#Give and example of how you might implement each tip.
+
+1. Document Everything.
+## Example: Keeping a file (like an electronic notebook) that discusses every step of your research process, such as how you gathered your data, how you analyzed the data, and how you presented the results of your data. 
+ 2. Everything is a (text) file.
+ ## Example: Making sure that you copy your data, analysis code, the write-up of results, and explanations into notepad, or in a script in R. 
+3. All files should be human readable.
+## Example: When using code or writing functions, using the proper character for noting (depending on what program you are using) to explain the use, details, and function of all code used. 
+4. Explicitly tie your files together.
+## Example: Making a way for future researchs to be able to trace back any code or graphs back to its source.
+ 5. Have a plan to organize, store, and make your files available. 
+ ## Example: Starting a folder for your project and then creating subfolders in the main folder to organize or separate each stage (i.e. having a folder for your data, another for your code, etc.)
+
+#Which on of these do you think will be the most difficult?
+The tip that will be the most difficult will be explicitly tying files together.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Question 2: Building Scatterplots Using the "plot()" function
+
+## Plot of Temperature by Month
+```{r cars}
+plot(x=airquality$Month, y=airquality$Temp, main="Temperature by Month", xlab="Month ", ylab="Temperature ")
+```
+
+## Plot of Temperature vs Ozone
+
+```{r pressure, echo=TRUE}
+plot(x=airquality$Temp, y=airquality$Ozone, main="Temperature vs Ozone", xlab="Temperature", ylab="Ozone")
+```
+
+#Question 3: Building Scatterplots Using the "plot()" function
+
+## Plot of Temperature vs Pressure
+```{r cars}
+```{r, echo=TRUE}
+plot(pressure ~temperature, data = pressure, main="Temperature vs Pressure", xlab="pressure", ylab="temperture" )
+```
+
+## Plot of Pressure vs Temperature
+```{r pressure_plot2, echo=TRUE}
+plot(temperature ~pressure, data = pressure, main="Pressure vs Temerature", xlab="temperature", ylab="pressure" )
+```

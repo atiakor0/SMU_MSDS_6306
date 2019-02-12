@@ -1,0 +1,5 @@
+This is the folder to access the homework from live session 5. In the folder you will find the following:
+The raw data files 'yob2016.txt' and 'yob2015.txt'
+The Rmarkdown file of the completed homework with Rcode
+A codebook that describes the nature of this problem, variables created, and guided instructions for reproducibility
+The file called 'top_10_girls' which have the top ten popular girl names for the client in this homework.

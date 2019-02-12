@@ -3,3 +3,5 @@ The raw data files 'yob2016.txt' and 'yob2015.txt'
 The Rmarkdown file of the completed homework with Rcode
 A codebook that describes the nature of this problem, variables created, and guided instructions for reproducibility
 The file called 'top_10_girls' which have the top ten popular girl names for the client in this homework.
+
+Topics discussed and applied: Data Munging, Data Merging, and Data summary.

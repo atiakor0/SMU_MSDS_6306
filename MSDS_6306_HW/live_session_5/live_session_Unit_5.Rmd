@@ -1,0 +1,109 @@
+---
+title: "Live_Session_Unit_5"
+author: "Audrene Tiakor"
+date: "February 11, 2019"
+output: 
+html_document:
+  keep.html=True
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+*First start with importing the following libraries:
+
+```{r libraries}
+library(rvest)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+```
+## Question 1: Data Munging (30 pts):
+###a. Import 'yob2016.txt' in R, Give columns names (Name, Gender, Count), name resulting data frame 'df'
+
+
+```{r import}
+setwd("C:\\Users\\Audrene\\Desktop\\SMU_MSDS_PROGRAM\\Term1_spring2019\\MSDS6306\\HW\\Live_session_5")
+
+```
+```{r yob}
+yob <- readLines("yob2016.txt")
+df<-data.frame(yob, stringsAsFactors=FALSE)
+df<-df %>% separate(yob,c("Name","Gender","Count"))
+df$Count<-as.numeric(df$Count)
+```
+###b. Display the summary and structure of df
+```{r display}
+str(df)
+summary(df)
+```
+###c. Find which name is spelled with 'yyy' and display it
+```{r which}
+grep("yyy$",df$Name,value = TRUE)
+df[which(df$Name == "Fionayyy"), ]
+```
+###d. Remove the name spelled with 'yyy' and save the object as y2016
+```{r delete}
+y2016<-df[-212,]
+```
+
+##Question 2: Data Merging (30 pts)
+###a. Import 'yob2015.txt' in R, Give columns names (Name, Gender, Count), name resulting data frame 'y2015'
+```{r y2015}
+yob2 <- readLines("yob2015.txt")
+y2015<-data.frame(yob2, stringsAsFactors=FALSE)
+y2015<-y2015 %>% separate(yob2,c("Name","Gender","Count"))
+y2015$Count<-as.numeric(y2015$Count)
+```
+###b. Display the last 10 rows in the dataframe. Describe something you find interesting
+```{r tail}
+tail(y2015,10)
+```
+*Comment: What's interesting about the last 10 rows in the dataframe is that they are all males, not females are in the last 10 of the y2015 dataframe. 
+
+###c. Merge y2016 and y2015 by your 'Name' and 'Count'Column, name it 'final'
+```{r merge}
+final <- merge(y2015,y2016,by= c('Name', 'Gender'))
+final[is.na(final), ] 
+```
+*I merged it by name and gender to clean up the fact that I had two gender columns, gender.x and gender.y. Since we are merging both data sets, I figured it would be cleaner and also better to merge the genders especially for 3c. I left the count.x and count.y columns alone because in number 3 we actually end up making a 'total' column, which requires we sum the count.x and count.y columns.
+
+##Question 3: Data Summary (30 points):
+###a. Create a new column called 'Total' that adds the count of 2016 and 2015 together
+```{r total}
+final$Total<-final$Count.x + final$Count.y
+head(final)
+sum(final$Total)
+```
+###b. Sort the data by 'Total'. Give top 10 most popular Names.
+```{r sort}
+final<-final[order(-final$Total),]
+head(final,10)
+```
+* The top 10 most popular popular names are: Emma, Olivia, Noah, Liam, Sophia, Ava, Mason, William, Jacob, and Isabella.
+
+###c. Client is expecting a girl. Omit the boys and give top 10 most popular girl's names
+```{r sort_girls}
+top_10<-head(final[final$Gender == 'F', ],10)
+```
+###d. Write top 10 girl names to a CSV file. Leave out other columns entirely.
+```{r write_csv}
+write.csv(top_10, file = "top_10_girl_names.csv",row.names=FALSE)
+```
+
+##Question 4: Upload to GitHub (10 pts):
+
+*URL to my Github: https://github.com/atiakor0/SMU_MSDS_6306.git
+
+*Instructions on how to access hw on Github:
+
+1. click on the folder titled 'MSDS_6306_HW'
+2. click on the folder titled 'live_session_5'
+3. in this folder you will find the following files:
+
++ Readme file, with what is contained in the live_session_5 folder
++ Rmarkdown file, with matching HTML file
++ Codebook
++ raw data sets 'yob2016.txt' and 'yob2015.txt'
++ finalized data set for client named 'top_10_girl_names.csv'
+

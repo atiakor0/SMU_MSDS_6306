@@ -1,0 +1,114 @@
+---
+title: "Codebook For Picking A Name For A Baby Girl"
+author: "Audrene Tiakor"
+date: "February 11, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Backstory
+A client is expecting a baby soon. He needs help deciding on what to name the child. He hired me to figure out popular names. He provided raw data in order to help me make a decision.
+
+###Libraries used:
+``````````
+library(rvest)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+``````````
+#Raw Data
+The raw data for this task consists of the following data sets:
+**yob2016.txt** This file is a series of popular children's names born in the year 2016 in the United states. This file contains 1 observation in each line. Each observation consists of 3 variables: first name, gender, and the amount of children given that name. *Note: this data is the raw data and does not contain the column names or variables.
+
+**yob2015.txt** This file is a series of popular children's names born in the year 2015 in the United states. This file contains 1 observation in each line. Each observation consists of 3 variables: first name, gender, and the amount of children given that name. *Note: this data is the raw data and does not contain the column names or variables.
+
+#Variables created with Explaination:
+* **yob** - variable created for raw data 'yob2016'
+* **df** - variable created to convert 'yob' to a dataframe
+* **y2016** - variable created as final tidy version of yob
+* **yob2** - variable created for raw data 'yob2015'
+* **y2015** - variable created to convert 'yob2' to dataframe
+* **final** - variable created after merge of y2015 and y2016
+* **top_10** - variable created to display final result and to write to a csv file
+
+#Tidy Data (Steps for how to go from raw to tidy data to serve question of interest)
+
+## First data set to tidy:
+### "yob2016.txt":
+#### This data set needs to be imported, given column names, and have a mispelled name deleted, then renamed as y2016 after observation has been deleted
+
+``````````
+#### import yob2016.txt file
+yob <- readLines("yob2016.txt")
+
+#### convert txt file to dataframe
+df<-data.frame(yob, stringsAsFactors=FALSE)
+
+#### give data set specified column names
+df<-df %>% separate(yob,c("Name","Gender","Count"))
+
+#### change the class of count column to numeric
+df$Count<-as.numeric(df$Count)
+
+#### find name mispelled named with 'yyy' at the end
+grep("yyy$",df$Name,value = TRUE)
+df[which(df$Name == "Fionayyy"), ]
+
+#### delete the misspelled name, renaming data y2016
+y2016<-df[-212,]
+``````````
+##Second data set to tidy:
+###"yob2015.txt":
+#### This data set needs to be imported, given column names, then merged with the 'y2016' data set by columns 'Name' and 'Gender', with the resulting finalized table renamed as 'final'
+
+``````````
+#### import yob2015.txt file
+yob2 <- readLines("yob2015.txt")
+
+#### convert txt file to dataframe
+y2015<-data.frame(yob2, stringsAsFactors=FALSE)
+
+#### give data set specified column names
+y2015<-y2015 %>% separate(yob2,c("Name","Gender","Count"))
+
+### change the class of count column to numeric
+y2015$Count<-as.numeric(y2015$Count)
+
+#### merge the data sets y2015 and y2016
+final <- merge
+
+#### check for NA's
+final[is.na(final), ]
+``````````
+## To tidy resulting dataframe 'final' after merge:
+#### This data set needs to have the column 'Total' added which will contain the sum of the amount of children with a given name from the datasets y2016 and y2015 that were merged together to create the dataframe 'final'. This data set also needs to be sorted by the column 'Total', with the top 10 most popular girl names displayed (Oh yeah, my client found out that he is having a girl, so we need to focus on the top 10 most popular girl names. YAY!)
+
+``````````
+####add total column
+final$Total<-final$Count.x + final$Count.y
+
+#### sum total column
+sum(final$Total)
+head(final)
+
+### total column sorted to find the top 10 most popular girl names
+final<-final[order(-final$Total),]
+head(final,10)
+
+#### top 10 girl names displayed in final variable top_10
+top_10<-head(final[final$Gender == 'F', ],10)
+
+``````````
+##Final Step in tidying the data:
+####Need to take the top 10 most popular girl names with their totals and write the to a CSV file
+
+``````````
+#### creating the CSV file 'top_10_girl_names' for client
+write.csv(top_10, file = "top_10_girl_names.csv",row.names=FALSE)
+``````````
+
+
+

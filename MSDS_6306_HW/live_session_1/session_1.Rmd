@@ -1,0 +1,121 @@
+---
+title: "Live Session Unit 01 Assignment"
+author: "Audrene Tiakor"
+date: "February 15, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+*This assignment is to familarize onesself with R as a calculator.
+
+#Question 1: Basic Math (20 pts)
+
+###a. The log of a positive number
+```{r log}
+log(4)
+```
+###b. What is the default base for the log function? Calculate the log of your previous number with a different base.
+```{r log_diff_base}
+log(4, base=4)
+```
+###c. The log of a negative number. (explain the answer)
+```{r log_neg}
+log(-3)
+```
+* An error message was returned because the log function is only defined for positive inputs. (x>=0)
+
+###d. The squareroot of a positive number.
+```{r sqrt}
+sqrt(7)
+```
+
+#Question 2: Random Number Generation (15 pts)
+
+###a. Create a vector of 15 standard normal random variables. Calculate its mean and SD:
+```{r random}
+x <-rnorm(15, 0, 1)
+x
+mean(x)
+sd(x)
+```
+
+###b. Change the mean to 10 and the SD to 2. Recalculate the vector of 15 random variables. Find the mean and SD.
+```{r random2}
+x <-rnorm(15, 10, 2)
+x
+mean(x)
+sd(x)
+```
+
+###c. Why are the means and SD not exactly the same as the means and SD's specified in the function?
+*Since the vector we created 'x' is of random variables, as the variables change, so does the mean and sd. 
+
+#Question 3: Vector Operations (40 pts)
+###a. Create a vector of weights for 6 individuals in kg which are 60, 72, 57, 90, 95, 72
+```{r weight}
+w<-c(60, 72, 57, 90, 95, 72)
+w
+```
+###b. Create a vector of heights for the 6 individuals in m which are 1.80, 1.85, 1.72, 1.90, 1.74, 1.91
+```{r height}
+h<-c(60, 72, 57, 90, 95, 72)
+h
+
+```
+###c. create a data frame using the vectors w and h
+```{r df}
+people<-data.frame(w,h)
+people
+
+```
+###d. Create a scatterplot of weight vs. height. Interpret the scatterplot.
+```{r scat}
+ 
+ plot(w, h, main = "Weight vs Height Correlation", xlab = "Weight (kg)", ylab = "Height (m)", frame = TRUE)
+abline(lm(h ~ w, data = people), col="blue")
+
+```
+###e. Calculate the BMI for each individual. (BMI= weight in kg divided by the square of the height in m)
+```{r bmi}
+ 
+ options(scipen = 999, digits = 4)
+ bmi <-function(w,h){
+ w/(h^2)
+   }
+people$bmi = bmi(people$w,people$h) 
+print(people$bmi)
+
+```
+###f. Calculate the mean for weight
+```{r mean}
+ people$mean_of_weight = mean(w)
+ people
+ people$diff =(people$w)
+ print(people)
+```
+###g. Subtract the mean from each value of weight
+```{r sub}
+  sd_top<- function(w){
+    mean(w) - w
+
+ }
+people$diff = sd_top(people$w)
+print(people)
+
+```
+###f. Sum the result
+```{r sum}
+  sum(people$diff)
+
+```
+
+# Question 4: My Data Science Profile
+```{r profile}
+setwd("C:\\Users\\Audrene\\Desktop\\Doing Data Science\\HW_1")
+Audrene <- read.table(file = "profile.csv",header = T,sep = ",")
+Audrene
+barplot(Audrene$Ranking,names.arg=Audrene$Categories,xlab="Skills",ylab="Ranking",col="blue", main="Data Science Profile",border="red")
+
+```

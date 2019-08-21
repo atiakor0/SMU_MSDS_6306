@@ -1,0 +1,81 @@
+---
+title: "Live Session 6 HW"
+author: "Audrene Tiakor"
+date: "February 15, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries}
+library(dplyr)
+library(ggplot2)
+```
+## Question 1: Mental Health (40 pts):
+###a. download rda file from https://datafiles.samhsa.gov/study-dataset/national-mental-health-services-survey-2015-n-mhss-2015-ds0001-nid17098
+
+```{r rda}
+setwd("C:\\Users\\Audrene\\Desktop\\SMU_MSDS_PROGRAM\\Term1_spring2019\\MSDS6306\\HW\\live_session_6")
+mental.sur<-load(file="N-MHSS-2015-DS0001-data-r.rda")
+mental.sur
+survey<-mh2015_puf
+
+```
+
+###b.create code tht lists the State abbreviations without their counts
+
+```{r levels}
+states<-levels(survey$LST)
+levels(survey$LST) <- gsub(" ","",levels(survey$LST))
+print (paste("All State Abbreviations: ", paste(unique(survey$LST), collapse = " ")))
+
+```
+###c. Filter the data frame from 1A, creat a list of counts for the VA medical centers in the mainland United States, ommit Alaska, Hawaii, and U.S. territories, convert this result to a data frame
+
+```{r df}
+facility<-levels(survey$FACILITYTYPE)
+facility_byState <- survey %>% filter(survey$FACILITYTYPE == "Veterans Administration medical center (VAMC) or other VA health care facility") %>% count(LST)
+drops <- c('AK', 'HI', 'PR', 'AS', 'FM', 'GU', 'MH', 'MP', 'PW', 'PR', 'VI')
+va_centers <- data.frame(facility_byState[!(facility_byState$LST %in% drops), ])
+names(va_centers)<-c("State", "Counts")
+names(va_centers)
+
+```
+*Note: The original names of va_centers were 'LST' and 'n'. To make this dataframe more human readable, the names were changed to "State" and "Counts".
+
+###d. Create a ggplot of the filtered data set 'va_centers', vary the bar's colors by State, give an appropriate professional title that is centered, make sure axes are have informative titles, State axis should be readable, and not layered over each other, legend is included
+```{r plot}
+ggplot(va_centers,aes(x=State,y=Counts,fill=State)) + 
+geom_bar(aes(reorder(State,-Counts)), stat="identity") + 
+theme(axis.text.x = element_text(angle = -90, hjust = 0, vjust = 0), legend.position = "right") + ggtitle("Number of VA Hospitals in the USA by State") + xlab("State") + ylab("Counts of VA Hospitals") + theme(plot.title= element_text(hjust = 0.5))
+```
+## Question 2: Mental Health (40 pts):
+###a. Import Statesize.csv data into R/ merge statsize dataset with dataset from question 1
+
+```{r state}
+state <- read.csv("statesize.csv")
+str(state)
+state.va <- merge(va_centers,state, by.x = 'State', by.y = 'Abbrev', all.x = TRUE)
+str(state.va) 
+anyNA(state.va) 
+state.va[rowSums(is.na(state.va)) > 0,]
+
+```
+###c. calculate a new variable in your combined dataframe, which indicates the VA hopsitals per thousand square miles
+```{r nv}
+state.va$num.per.1000.sq.miles <- state.va$Count / state.va$SqMiles * 1000
+
+```
+###d. Create another ggplot
+```{r plot2}
+ggplot(na.omit(state.va),aes(x=State,y=num.per.1000.sq.miles,fill=Region)) + 
+  geom_bar(aes(reorder(State,-num.per.1000.sq.miles)), stat="identity")  + 
+  theme(axis.text.x = element_text(angle = -90, hjust = 0, vjust = 0)) +
+  ggtitle("Number of VA Hospitals in the USA by State") + xlab("State") + ylab("Count of VA Hospitals per 1000 sq. miles") +
+  theme(plot.title= element_text(hjust = 0.5)) 
+```
+*The patterns that I see is that most of the VA Hospitals in the United States are located in the Northeast region. The lowest number of VA Hospitals in the United States are in the Midwest. 
+
+```

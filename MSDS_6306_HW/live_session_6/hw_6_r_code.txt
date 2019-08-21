@@ -1,0 +1,46 @@
+Code for HW #6
+
+
+Question #2
+library(agricolae)
+library(multcomp)
+setwd("C:\\Users\\Audrene\\Desktop\\SMU_MSDS_PROGRAM\\Term1_spring2019\\MSDS6371\\HW\\hw_6")
+handdata <- read.table(file = "Unit 6 Handicap Data.csv",header = T,sep = ",")
+# For Tukey-kramer#
+print(HSD.test(aov(lm(Score ~ Handicap, data=handdata)), "Handicap"))
+
+#For LSD test#
+print(LSD.test(aov(lm(Score ~ Handicap, data=handdata)), "Handicap"))
+
+# For Bonferroni test#
+print(LSD.test(aov(lm(Score ~ Handicap, data=handdata)), "Handicap", p.adj=c("bonferroni")))
+
+#For Scheffe' test#
+print(scheffe.test(aov(lm(Score ~ Handicap, data=handdata)), "Handicap"))
+
+
+Question #3
+library(multcomp)
+
+
+
+setwd("C:\\Users\\Audrene\\Desktop\\SMU_MSDS_PROGRAM\\Term1_spring2019\\MSDS6371\\HW\\hw_5")
+
+education <- read.table(file = "ex0525.csv",header = T,sep = ",")
+educ_trans <- log(education$Income2005)
+#full Anova and Confidence Intervals#
+edu.aov<-aov(educ_trans~Educ, data=education)
+pairwiseCI(educ_trans~Educ, data=education)
+
+# For Tukey-Kramer procedure and confidence intervals#
+g_edu = glht(edu.aov, linfct = mcp(Educ = "Tukey"))
+summary(g_edu)
+confint(g_edu)
+
+# For Dunnett procedure and confidence intervals#
+education$Educ = relevel(education$Educ, ref = '12')
+edu.aov<-aov(educ_trans~Educ, data=education)
+g_edu = glht(edu.aov, linfct = mcp(Educ = "Dunnett"))
+summary(g_edu)
+confint(g_edu)
+

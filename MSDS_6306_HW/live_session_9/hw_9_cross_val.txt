@@ -1,0 +1,7 @@
+# Import Librarylibrary(caTools)
+# Set a random see so your "random" results are the same as this notebookset.seed(101) 
+# Split up the sample, basically randomly assigns a booleans to a new column "sample"
+sample <- sample.split(df$age, SplitRatio = 0.70)
+# SplitRatio = percent of sample==TRUE
+# Training Datatrain = subset(df, sample == TRUE)
+# Testing Datatest = subset(df, sample == FALSE)

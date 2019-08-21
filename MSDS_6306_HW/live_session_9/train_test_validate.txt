@@ -1,0 +1,86 @@
+> set.seed(123)
+> samp_size<-floor(0.60*nrow(Colorado))
+> train_ind<-sample(seq_len(nrow(Colorado)),size=samp_size)
+> TrainingCO<-Colorado[train)ind,]
+Error: unexpected ')' in "TrainingCO<-Colorado[train)"
+> TrainingCO<-Colorado[train_ind,]
+> TestCO<-Colorado[-train_ind,]
+> View(TrainingCO)
+> View(TestCO)
+> samp_size<-floor(0.60*nrow(Texas))
+> train_ind<-sample(seq_len(nrow(Texas)),size=samp_size)
+> TrainingTX<-Texas[train_ind,]
+> TestTX<-Texas[-train_ind,]
+> class(TrainingCO)
+[1] "data.frame"
+> summary(TrainingCO)
+   Brewery_id        Beer              Beer_ID            ABV         
+ Min.   :  7.0   Length:87          Min.   :   1.0   Min.   :0.04200  
+ 1st Qu.:108.0   Class :character   1st Qu.: 590.5   1st Qu.:0.05250  
+ Median :167.0   Mode  :character   Median : 808.0   Median :0.06300  
+ Mean   :244.3                      Mean   :1046.3   Mean   :0.06397  
+ 3rd Qu.:418.0                      3rd Qu.:1457.5   3rd Qu.:0.07000  
+ Max.   :524.0                      Max.   :2644.0   Max.   :0.09900  
+      IBU            Style                 OZ          Brewery         
+ Min.   : 10.00   Length:87          Min.   :12.00   Length:87         
+ 1st Qu.: 24.00   Class :character   1st Qu.:12.00   Class :character  
+ Median : 35.00   Mode  :character   Median :12.00   Mode  :character  
+ Mean   : 44.51                      Mean   :13.29                     
+ 3rd Qu.: 65.00                      3rd Qu.:16.00                     
+ Max.   :100.00                      Max.   :19.20                     
+     City              State          
+ Length:87          Length:87         
+ Class :character   Class :character  
+ Mode  :character   Mode  :character  
+                                      
+                                      
+                                      
+> summary(Texaslm)
+Error in summary(Texaslm) : object 'Texaslm' not found
+> Texaslm<-lm(ABV~IBU, data = Texas)
+> summary(Texaslm)
+
+Call:
+lm(formula = ABV ~ IBU, data = Texas)
+
+Residuals:
+      Min        1Q    Median        3Q       Max 
+-0.014770 -0.005805 -0.001593  0.003360  0.028071 
+
+Coefficients:
+             Estimate Std. Error t value Pr(>|t|)    
+(Intercept) 4.351e-02  1.791e-03   24.29   <2e-16 ***
+IBU         4.168e-04  3.709e-05   11.24   <2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 0.009128 on 86 degrees of freedom
+Multiple R-squared:  0.5949,	Adjusted R-squared:  0.5902 
+F-statistic: 126.3 on 1 and 86 DF,  p-value: < 2.2e-16
+
+> View(TrainingTX)
+> TestTX$pred<-(as.numeric(.000435 + (.0004168*TestTX$IBU))
++ )
+> TestTX$pred<-(as.numeric(.000435 + (.0004168*TestTX$IBU)))
+> View(TestTX)
+> TestTX$residuals<-(as.numeric(TestTX$ABV-TestTX$pred))
+> TestTX$pred2<-(as.numeric(.000435 + (.0004168*((TestTX$IBU)^2))))
+> TestTX$residuals2<-(as.numeric(TestTX$ABV-TestTX$pred2))
+> ASETestTX=sum((TestTX$residuals)^2)/(length(TestTX$ABV)))
+Error: unexpected ')' in "ASETestTX=sum((TestTX$residuals)^2)/(length(TestTX$ABV)))"
+> ASETestTX=sum((TestTX$residuals)^2)/(length(TestTX$ABV))
+> ASETestTX
+[1] 0.001988728
+> ASETestTX1=sum((TestTX$residuals)^2)/(length(TestTX$ABV))
+> ASETestTX1
+[1] 0.001988728
+> ASETestTX2=sum((TestTX$residuals2)^2)/(length(TestTX$ABV))
+> ASETestTX2
+[1] 1.182091
+> TestTXModel2<-lm(ABV~IBU+IBU2, data=TestTX)
+Error in eval(predvars, data, env) : object 'IBU2' not found
+> beerCOTX$IBU2<-(as.numeric(beerCOTX$IBU))^2
+> TestTX$IBU2<-(as.numeric(TestTX$IBU))^2
+> View(TestTX)
+> TestTXModel2<-lm(ABV~IBU+IBU2, data=TestTX)
+> summary(TestTXModel2)

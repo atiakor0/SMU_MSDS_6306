@@ -1,0 +1,223 @@
+---
+title: "Unit 9 Live Session HW"
+author: "Audrene Tiakor"
+date: "March 11, 2019"
+output: html_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+setwd("C:\\Users\\Audrene\\Desktop\\SMU_MSDS_PROGRAM\\Term1_spring2019\\MSDS6306\\HW\\live_session_9")
+```
+
+```{r message=FALSE, warning=FALSE, , include=TRUE, paged.print=FALSE}
+library(ggplot2) # Data visualization
+library(readr) # CSV file I/O, e.g. the read_csv function
+library(dplyr) # Heavy use of this library
+library(tidyr)
+library(plyr)
+library(ggthemes) # for themes in ggplot
+library(knitr)
+library(kableExtra) # library to make the document more presentable
+library(datasets) # to make region col
+library(zoo)
+library(agricolae)
+library(caret) #to split data in train/test
+library(FNN) #for knn regression
+library(class)
+```
+####Background: 
+Brewmeisters in Colorado and Texas have teamed up to analyze the relationship between ABV and IBU in each of their states. Use the data sets from the project to help them in their analysis. There three main questions of interest are 1) is there significant linear relationship between AVB (response,y) and IBU (explanatory, x), 2) Is this relationship different between beers in Colorado and Texas and 3) Is there a significant quadratic component in this relationship for either Colorado or Texas or both?
+
+###A. Clean and Prepare The Data:
+1. Create column for brewery ID that is common to both datasets similar to what you did in the project, so we can merge!
+
+```{r, cc}
+# Read in beer and breweries data set using _csv for more tidy output
+Beers <- read_csv('Beers.csv', col_types = cols())
+Breweries <- read_csv('Breweries.csv', col_types = cols())
+
+```
+2. Merge the beer and brewery data into a single dataframe.
+```{r, merge}
+BrewPub <- merge(Beers, Breweries, by.x = "Brewery_id", by.y = "Brew_ID", all = TRUE)
+# Change variable names to more meaningful title
+
+BrewPub <- rename(BrewPub, c("Name.x"="Beer","Name.y"="Brewery",
+                   "Ounces"="OZ"))
+
+```
+3. Clean the State Column...get rid of extraneous white space.
+```{r, paged.print=FALSE}
+BrewPub$State<-str_trim(BrewPub$State, side= C("both"))
+kable(BrewPub %>% str())
+```
+4. Create one dataset that has only Colorado and Texas beers and no IBU NAs...name it "beerCOTX".
+```{r, cotx}
+#extract information for Texas from BrewPub (merged dataset)
+Texas <- BrewPub[which(BrewPub$State == 'TX'),names(BrewPub) %in% c("Brewery_id","Beer","Beer_ID","ABV","IBU","Style","OZ","Brewery","City","State")] %>% na.omit()
+
+
+#extract information for Texas from BrewPub (merged dataset)
+Colorado <- BrewPub[which(BrewPub$State == 'CO'),names(BrewPub) %in% c("Brewery_id","Beer","Beer_ID","ABV","IBU","Style","OZ","Brewery","City","State")] %>% na.omit()
+
+
+#Creating beerCOTX
+beerCOTX<-rbind(Texas, Colorado) 
+
+#Check for any NA's
+any(is.na(beerCOTX))
+
+```
+5. Order beerCOTX by IBU (ascending) ... this will be important later in graphing.
+```{r, asc}
+#sorting IBU in ascending order
+beerCOTX[]<-lapply(beerCOTX, as.character)
+beerCOTX[order(beerCOTX$IBU),]
+
+```
+
+###B. Create An Initial Plot Of The Data
+6. Plot ABV v. IBU for both Colorado and Texas (two separate plots)...use ggplot and facets.
+```{r, plot1}
+#For ABV and IBU relationship model in Texas and Colorado
+
+ggplot(beerCOTX, aes(x=beerCOTX$IBU, y=beerCOTX$ABV)) + geom_point() + geom_smooth(method=lm, se=FALSE) + theme(plot.title = element_text(size=14,hjust= 0.5, face="bold.italic")) + ggtitle("Relationship Between Bitterness of Beer and Its Alcoholic Content In Colorado") +
+  labs(x="Bitterness",y="Alcoholic Content") + facet_grid(.~State)
+
+```
+###C. Model the Data
+7. For each state, fit a simple linear regression model to assess the relationship between ABV and IBU. Use the regular plot funtion in base R(not ggplot) to create a scatter plot with the regresson line superimposed on the plot. Again, this should be done for each state.
+```{r, plot2}
+#For Texas
+attach(Texas)
+plot(IBU, ABV, main="Relationship Between ABV and IBU In Texas", 
+     xlab="IBU ", ylab="ABV ", pch=19)
+abline(lm(ABV~IBU), col="red")
+
+#For Colorado
+attach(Colorado)
+plot(IBU, ABV, main="Relationship Between ABV and IBU In Colorado", 
+     xlab="IBU ", ylab="ABV ", pch=19)
+abline(lm(ABV~IBU), col="blue")
+
+```
+8. Address the assumptions of the regression model. You may assume the data are independent(even if this is a stretch): 1. There is a normal distribution of the ABV for fixed values of IBU. 2. These normal distributions have equal standard deviations. 3. The means of these normal distributions have a linear relationship with IBU. 4. Independence(you may assum this one ot be true without defense.)
+
+```{r}
+ABV_Hist <- ggplot(beerCOTX,aes(x=ABV)) + geom_histogram(colour="black", fill="white", stat="count") + theme(axis.text.x=element_text(size=7), plot.title = element_text(size=14,hjust = 0.5, face="bold.italic")) + theme_bw() + ggtitle("Histogram of Alcohol Content By State") + labs(x="ABV",y="Count") + theme(axis.text.x = element_text(angle = -90, hjust = 0, vjust = 0)) + facet_grid(State~.)
+ABV_Hist 
+```
+Using the histogram, we can say that assumptions are met. 
+###D. Gain Inference From The Model
+9. Make sure to print the parameter estimate table. Interpret the slope (from each state) of the regression model. You should have one sentence for each interpretation. In addition, the question: is there evidence that the relationship between ABV and IBU is significantly different for Texas and Colorado beers? For now this is a judgment call.
+
+```{r, lm}
+#For Texas
+Texaslm<-lm(ABV~IBU, data = Texas)
+summary(Texaslm)
+
+#For Colorado
+Coloradolm<-lm(ABV~IBU, data = Colorado)
+summary(Coloradolm)
+
+```
+*Interpretation of slope for Texas model*:
+It is estimated that for every increase in IBV per unit, the estimated ABV increases by 0.0004172.
+
+*Interpretation of slope for Colorado model*:
+It is estimated that for every increase in IBV per unit, the estimated ABV increases by 0.0003676.
+
+Question of Interest: Is the relationship between ABV and IBU significantly different for Texas and Colorado beers?
+Answer: For both Texas and Colorado, the p-value is very close to zero. Using 0.05 as the level of significance, this allows us to conclude that the relationship between ABV and IBU are indeed significantly different. This means that there is a relationship between ABV and IBU for Texas and Colorado respectively. 
+
+10. Provide a confidence interval for each slope (from each state). Provide a sentence that interprets each slope(for each state) but this time include the confidence interval in your interpretation. Answer this question: Is there significant evidence that the relationship between ABV and IBU is significanlty different for Texas and Colorado beers?
+
+*Confidence Interval for Slope (Texas):
+The confidence interval for slope in regards to Texas is (0.000344, 0.000490). We are 95% confident that when the IBU increases per unit, the mean amount of ABV increases between (0.000344, 0.000490). 
+
+*Confidence Interval for Slope (Colorado):
+The confidence interval for slope in regards to Colorado is (0.000280, 0.000435). We are 95% confident that when the IBU increases per unit, the mean amount of ABV increases between (0.000280, 0.000435).
+
+###E. Compare Two competing Models: External Cross Validation
+11. Using the beerCOTX dataframe, add a column to the data that is the square of the IBU column. Call it IBU2. Print the head of the dataframe with the new column.
+```{r,IBU2}
+beerCOTX$IBU2<-(as.numeric(beerCOTX$IBU))^2
+head(beerCOTX, 10)
+```
+12.For each state, create a training and test set from the data (60%/40% split respectively). Print a summary of each new data frame...there should be four: TrainingCo, TestCo, TrainingTX, TestTX.
+```{r,ttCO}
+#create training and test set for Colorado, 60% train, 40% test
+set.seed(123)
+samp_size<-floor(0.60*nrow(Colorado))
+train_ind<-sample(seq_len(nrow(Colorado)),size=samp_size)
+TrainingCO<-Colorado[train_ind,]
+TestCO<-Colorado[-train_ind,]
+
+#create training and test set for Texas, 60% train, 40% test
+
+samp_size<-floor(0.60*nrow(Texas))
+train_ind<-sample(seq_len(nrow(Texas)),size=samp_size)
+TrainingTX<-Texas[train_ind,]
+TestTX<-Texas[-train_ind,]
+
+#Print Summary of each: TrainingCO, TestCO, TrainingTX, TestTX
+summary(TrainingCO)
+summary(TestCO)
+summary(TrainingTX)
+summary(TestTX)
+```
+```{r,pred}
+#Cross Validation of Training/Test Data for Colorado and Texas
+
+#Model 1 (Texas)
+
+fitTrainingTX = lm(ABV~IBU, data = TrainingTX)
+#How well did the method recover the true parameter values (intercept and slope).
+summary(fitTrainingTX)
+# These are the predictions of the model on the data that were used to fit the model.
+predsTrainingTX = predict(fitTrainingTX)
+TrainingTX$preds = predsTrainingTX
+TrainingTX
+# These are the predictions of the model on the data that were NOT used to fit the model.
+# This is a better measure of how the model will perform in real life
+predsTestTX = predict(fitTrainingTX, newdata = TestTX)
+TestTX$preds = predsTestTX
+TestTX
+
+# Calculation of the MSE for the training set
+ASEholderTrainingTX = sum((predsTrainingTX - TrainingTX$ABV)^2)/(length(TrainingTX$ABV))
+#do this for ASE
+# Calculation of the MSE for the Test set
+ASEholderTestTX = sum((predsTestTX - TestTX$ABV)^2)/(length(TestTX$ABV))
+
+ASEholderTrainingTX
+ASEholderTestTX
+```
+```{r,pred2}
+
+
+#Model 2 (Colorado)
+
+
+fitTrainingCO = lm(ABV~IBU, data = TrainingCO)
+#How well did the method recover the true parameter values (intercept and slope).
+summary(fitTrainingCO)
+# These are the predictions of the model on the data that were used to fit the model.
+predsTrainingCO = predict(fitTrainingCO)
+TrainingCO$preds = predsTrainingCO
+TrainingCO
+# These are the predictions of the model on the data that were NOT used to fit the model.
+# This is a better measure of how the model will perform in real life
+predsTestCO = predict(fitTrainingCO, newdata = TestCO)
+TestCO$preds = predsTestCO
+TestCO
+
+# Calculation of the MSE for the training set
+ASEholderTrainingCO = sum((predsTrainingCO - TrainingCO$ABV)^2)/(length(TrainingCO$ABV))
+#do this for ASE
+# Calculation of the MSE for the Test set
+ASEholderTestCO = sum((predsTestCO - TestCO$ABV)^2)/(length(TestCO$ABV))
+
+ASEholderTrainingCO
+ASEholderTestCO
+```

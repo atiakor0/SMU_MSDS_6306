@@ -1,0 +1,178 @@
+---
+title: "LSA_12"
+author: "Audrene Tiakor"
+date: "April 3, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+setwd("C:\\Users\\Audrene\\Desktop\\SMU_MSDS_PROGRAM\\Term1_spring2019\\MSDS6306\\HW\\live_session_12")
+```
+
+```{r, message=F, warning=F}
+library(fpp)
+library(dplyr)
+library(kableExtra)
+library(xts)
+library(fpp2)
+library(dygraphs)
+library(readr)
+library(tidyverse)
+```
+#Questions
+
+###1. Warm Up: Brief Financial Data (20%):
+####a. Natively in R, you have access to sample data sets of prominent stocks over time. We'll be using EuStockMarkets for this question. Type help(EuStockMarkets) to learn more. From these data, pull specifically the DAX index.
+
+```{r,dax}
+DAX<-data.frame(EuStockMarkets) %>% select(DAX)
+
+kable(DAX %>% head()) %>% kable_styling(bootstrap_options = 
+                                          "striped", full_width = F, position = "center")
+```
+
+####b. These are annual European Stock Data from 1990 onward. Create a rudimentary plot of the data. Make the line blue. Give and informative title. Lable the axes accurately. In 1997, an event happened you want to indicate; add a vertical red line to your plot which divides pre-1997 and post-1997 information.
+```{r, message=F, warning=F}
+#creating time series data from years 1990 to 2016 for European Stock Market Data
+DAX<- DAX %>% ts(DAX, start = c(1990,1), end = c(2016,1), frequency = 232)
+
+#rudimentary plot of the data from 1990 to 2016, adding red line for year 1997
+DAX_plot <-plot(DAX, col='blue', main = "Stock Data of European Stock Market from 1990 to 2016", xlab= "years", ylab="European Stock", xlim = c(1990, 2016)) %>% abline(v=1997, col="red")
+```
+
+####c. Decompose the time series into its components (i.e., trend, seasonality, random). Keep in mind that this is a multiplicative model you want. Create a plot of all decomposed components. As before, make all lines blue and have a vertical divider at the year 1997.
+
+```{r}
+Dax_decomposed<-decompose(DAX, type="multiplicative") %>% plot(Dax_decomposed, col = "blue") %>% abline(v=1997, col = "red")
+```
+
+###2. Temperature Data (40%)
+
+####a,b. Using the maxtemp dataset granted by loading fpp2, there are maximum annual temperature data in Celsius. For more information, use help(maxtemp). To see what you're looking at, execute the command in 'Examples' in the help document. We are only concerned with information after 1990.
+
+```{r}
+max_temp<-window(maxtemp, start=1990, end =2016)
+
+kable(max_temp %>% head()) %>% kable_styling(bootstrap_options = 
+                                          "striped", full_width = F, position = "center")
+
+autoplot(max_temp, main= "Maximum annual temperatures (degrees Celsius) for Moorabbin Airport, Melbourne 1990-2016", xlab="years", ylab="Degrees (Celsius)") 
+```
+
+####c. Utilize SES to predict the next five years or maximum temperatures in Melbourne. Plot this information, including the prior information and the forcast. Add the predicted value line across 1990-present as a separate line, preferable blue. So, to review, you should have your fit, the predicted value line overlaying it, and a forcast through 2021, all on one axis. Find the AIC and BIC of this fitted model. You will use the information later.
+
+```{r}
+ses_fit<-ses(max_temp, h=5)
+
+temp_plot<-plot(ses_fit,ylab= "Temperature", xlab= "Year", main="Forecast of Maximum temperatures in Melbourne", fcol= "blue", type= "o")
+
+lines(fitted(ses_fit), col = "blue", type = "o")
+
+ses_fit$model
+
+```
+
+####d.Now use a damped Holt's linear trend to also predict out five years. Make sure initial = "optimal". As above, create a similar plot to 1C, but use the Holt fit instead.
+
+```{r}
+holt_fit <- holt(max_temp, initial="optimal", h=5, damped=TRUE)
+
+plot(holt_fit, ylab="Temperature, Celsius", xlab= "Year", main="Comparing forecast fit")
+
+lines(fitted(holt_fit), col="blue", type="o")
+
+holt_fit$model
+
+```
+
+####e. Compare the AICc and BIC of the ses() and holt() models. Which model is better here?
+Using the following comparison:
+
+For the ses() model:
+AICc= 141.5302
+BIC = 144.3743
+
+For the holt() model:
+AICc = 145.5865
+BIC = 149.1615
+
+Since the the AICc and the BIC for the ses() model is lower, we can conclude that the better model is the ses().
+
+####f. Calculate and compare the ASE from the ses() and holt() models. Which one perfomrs better with respect to this metric?
+
+###3. The Wands Choose the Wizard (40%)
+
+####a. Utilize the dygraphs library. Read in both Unit12TimeSeries_Ollivander and _Gregorovitch.csv as two different data frames. They do not have headers so make sure you account for that. This is a time series of Wands sold over years.
+
+```{r, import}
+#Read in both _Ollivander and _Gregorovitch data
+Oll_wands <- read_csv('Unit12TimeSeries_Ollivander.csv', col_names=FALSE)
+Oll_wands<-rename(Oll_wands, "Date" = X1, "Wand_Sales" = X2)
+
+#view _Ollivander data
+kable(Oll_wands %>% head()) %>% kable_styling(bootstrap_options = "striped", full_width = F, position = "center")
+
+Greg_wands <- read_csv('Unit12TimeSeries_Gregorovitch.csv', col_names=FALSE) 
+Greg_wands<-rename(Greg_wands, "Date" = X1, "Wand_Sales" = X2)
+
+#view _Gregorovitch data
+kable(Greg_wands %>% head()) %>% kable_styling(bootstrap_options = "striped", full_width = F, position = "center")
+
+```
+
+####b. You don't have your information in the proper format! In both data sets, you'll need to first convert the data-like variable to an actual Date class.
+
+```{r}
+# convert the date-like variable to  Date class for both data sets
+Oll_wands$Date <- as.Date(Oll_wands$Date,"%m/%d/%Y")
+str(Oll_wands$Date)
+#view _Ollivander data
+kable(Oll_wands %>% head()) %>% kable_styling(bootstrap_options = "striped", full_width = F, position = "center")
+
+Greg_wands$Date <- as.Date(Greg_wands$Date,"%m/%d/%Y")
+#view _Gregorovitch data
+kable(Greg_wands %>% head()) %>% kable_styling(bootstrap_options = "striped", full_width = F, position = "center")
+
+```
+
+####c. Use the library xts (and the xts()function) to make each data frame an xts object (effectively, a time sereis). You'll want to order.by the Date variable.
+
+```{r}
+#converting _Ollivander data and _Gregorovitch data to xts object, and ordering by data variable
+
+OW <- as.xts(Oll_wands$Wand_Sales, order.by = Oll_wands$Date) 
+
+#view _Ollivander data
+kable(OW %>% head()) %>% kable_styling(bootstrap_options = "striped", full_width = F, position = "center")
+
+GW <- as.xts(Greg_wands$Wand_Sales, order.by = Greg_wands$Date) 
+
+#view _Gregorovitch data
+kable(GW %>% head()) %>% kable_styling(bootstrap_options = "striped", full_width = F, position = "center")
+
+```
+
+####d. Bind the two xts objects together and create a dygraph from it. Utilize the help() index if you are stuck.
+
+*Give and effective title and x/y axes
+
+*Label each Series (via dySeries) to be the appropriate wand-maker. So, one line should create a label for Ollivander and the other for Gregorovitch.
+
+*Stack this graph and modify the two lines to be different colors(and not the default ones!) Any colors are fine, but make sure they're visible and that Ollivander is a different color than Gregorovitch.
+
+*Activate a range selector and make it big enough to view.
+
+*Use dyShading to illuminate approximately when Voldemort was revived and at-large: between 1995 to 1999.
+
+*Enable Highlighting on the graph, so mousing over a line bolds it.
+
+```{r}
+Oll_Greg_wands <- cbind(OW, GW) 
+
+dygraph(Oll_Greg_wands, main="Ollivander vs. Gregorovitch Wand Sales", ylab="Wand_Sales", xlab="Date") %>% 
+  dyOptions(rightGap=20) %>% dyLegend(width=291) %>% dyAxis('y', rangePad=10) %>%
+  dySeries(name = "OW", label = "Ollivander", color = "black") %>%
+  dySeries(name = "GW", label = "Gregorovitch", color = "darkorange") %>% 
+  dyRangeSelector(height=100, fillColor = "blue") %>% dyShading(from = "1995-1-1", to = "1999-1-1", color = "#ef4f4f") %>% dyHighlight(highlightCircleSize = 5, highlightSeriesBackgroundAlpha = 0.5, hideOnMouseOut = FALSE) %>% dyEvent("1995-1-1", "Voldemort Rises", labelLoc = "top") %>% dyEvent("1999-1-1", "Voldemort Defeated", labelLoc = "top")
+```

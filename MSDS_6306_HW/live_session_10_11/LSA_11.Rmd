@@ -1,0 +1,182 @@
+---
+title: "LSA_11"
+author: "Audrene Tiakor"
+date: "March 28, 2019"
+output: html_document
+---
+
+---
+
+```{r,lib}
+library(dplyr)
+library(tidyr)
+library(plyr)
+library(jsonlite)
+library(caret)
+```
+1-3. Use the most updated code that is zipped with this. It fixes the grep problem by pasting a string with bracketed regular expression. Use the "snippet" instead of the headline. Look at the data from 1989 to 1999.
+```{r, code}
+# First, need to put specialized API key
+NYTIMES_KEY = "R4womc6lruskQnucRE9npn1QbyGrtTqF" #Your Key Here … get from NTY API website
+
+# Let's set some parameters
+term <- "central+park+jogger" # Need to use + to string together separate words
+begin_date <- "19890101"
+end_date <- "19991231"
+
+baseurl <- paste0("http://api.nytimes.com/svc/search/v2/articlesearch.json?q=",term,
+                  "&begin_date=",begin_date,"&end_date=",end_date,
+                  "&facet_filter=true&api-key=",NYTIMES_KEY, sep="")
+
+initialQuery <- jsonlite::fromJSON(baseurl)
+maxPages <- round((initialQuery$response$meta$hits[1] / 10)-1)
+
+pages <- list()
+for(i in 0:maxPages){
+  nytSearch <- jsonlite::fromJSON(paste0(baseurl, "&page=", i), flatten = TRUE) %>% data.frame() 
+  message("Retrieving page ", i)
+  pages[[i+1]] <- nytSearch 
+  Sys.sleep(10) 
+}
+
+#gather the pages into one dataframe
+allNYTSearch <- rbind_pages(pages)
+#see if it is populated
+dim(allNYTSearch)
+head(allNYTSearch, 5)
+```
+
+
+4. To provide external cross validation (50%/50%). Create a training and test set from the total number of articles. Train the classifier on the training set and create your confusion matrix from the test set. Make sure and provide the confusion matrix.
+```{r,cross}
+#cross validation: training/test set (50%/%50, training/test respectively)
+allNYTSearch$NewsOrOther = ifelse(allNYTSearch$response.docs.type_of_material == "News","News","Other")
+seed= 123
+train_perc = .5
+train_indices = sample(seq(1,length(allNYTSearch),by = 1), train_perc*length(allNYTSearch))
+TrainingNYT = allNYTSearch[train_indices,]
+TestNYT = allNYTSearch[-train_indices,]
+```
+
+
+#Classification Using Snippet
+
+```{r,news}
+
+#This function returns P(News | Keyword) 
+#P(News|KW) = P(KW|News)* P(News) / P(KW)
+
+Pnews_word = function(key_word = "jogging", TrainingNYT)
+{
+  print(key_word)
+  NewsGroup = TrainingNYT[TrainingNYT$NewsOrOther == "News",]
+  OtherGroup = TrainingNYT[TrainingNYT$NewsOrOther == "Other",]
+  
+  pNews = dim(NewsGroup)[1] / (dim(NewsGroup)[1] + dim(OtherGroup)[1])
+  pOther = 1 - pNews
+  
+  pKWGivenNews = length(grep(paste("\\b",key_word,"\\b",sep=""),NewsGroup$response.docs.snippet,ignore.case = TRUE))/dim(NewsGroup)[1]
+  pKWGivenOther = length(grep(paste("\\b",key_word,"\\b",sep=""),OtherGroup$response.docs.snippet,ignore.case = TRUE))/dim(OtherGroup)[1]
+  
+  pKW = length(grep(paste("\\b",key_word,"\\b",sep=""),TrainingNYT$response.docs.snippet,ignore.case = TRUE))/dim(TrainingNYT)[1]
+  
+  pNewsGivenKW = pKWGivenNews*pNews/pKW
+  pOtherGivenKW = pKWGivenOther*pOther/pKW
+  
+  return(pNewsGivenKW)
+}
+
+
+theScoreHolderNews = c()
+theScoreHolderOther = c()
+articleScoreNews = 0;
+articleScoreOther = 0;
+
+
+for (i in 1 : dim(TestNYT)[1])  #This loop iterates over the articles
+{
+  
+  articleScoreNews = 0; 
+  articleScoreOther = 0;
+  theText = unlist(strsplit(gsub("[^[:alnum:] ]", "", TestNYT$response.docs.snippet[i]), " +"))
+  for(j in 1 : length(theText))  #This loop iterates over the headline (each word)
+  {
+    articleScoreNews = articleScoreNews + Pnews_word(theText[j],TestNYT)
+    articleScoreOther = articleScoreOther + (1 - Pnews_word(theText[j],TestNYT))
+  }
+  theScoreHolderNews[i] = articleScoreNews
+  theScoreHolderOther[i] = articleScoreOther
+}
+
+
+# Classify the aricle as News or Other based on a given piece of information from the article.
+TestNYT$Classified = ifelse(theScoreHolderNews > theScoreHolderOther,"News","Other")
+```
+5a. Confusion Matrix for Snippet
+```{r,mat}
+#Confusion Matrix
+result_snippet<-table(TestNYT$NewsOrOther,TestNYT$Classified)
+confusionMatrix(result_snippet)
+```
+
+#Classification Using Headline
+
+```{r,head}
+#This function returns P(News | Keyword) 
+#P(News|KW) = P(KW|News)* P(News) / P(KW)
+Pnews_word = function(key_word = "jogging", TrainingNYT)
+{
+  print(key_word)
+  NewsGroup = TrainingNYT[TrainingNYT$NewsOrOther == "News",]
+  OtherGroup = TrainingNYT[TrainingNYT$NewsOrOther == "Other",]
+  
+  pNews = dim(NewsGroup)[1] / (dim(NewsGroup)[1] + dim(OtherGroup)[1])
+  pOther = 1 - pNews
+  
+  pKWGivenNews = length(grep(paste("\\b",key_word,"\\b",sep=""),NewsGroup$response.docs.headline.main,ignore.case = TRUE))/dim(NewsGroup)[1]
+  pKWGivenOther = length(grep(paste("\\b",key_word,"\\b",sep=""),OtherGroup$response.docs.headline.main,ignore.case = TRUE))/dim(OtherGroup)[1]
+  
+  pKW = length(grep(paste("\\b",key_word,"\\b",sep=""),TrainingNYT$response.docs.headline.main,ignore.case = TRUE))/dim(TrainingNYT)[1]
+  
+  pNewsGivenKW = pKWGivenNews*pNews/pKW
+  pOtherGivenKW = pKWGivenOther*pOther/pKW
+  
+  return(pNewsGivenKW)
+}
+
+theScoreHolderNews = c()
+theScoreHolderOther = c()
+articleScoreNews = 0;
+articleScoreOther = 0;
+
+
+for (i in 1 : dim(TestNYT)[1])  #This loop iterates over the articles
+{
+  
+  articleScoreNews = 0; 
+  articleScoreOther = 0;
+  
+  theText = unlist(strsplit(gsub("[^[:alnum:] ]", "", TestNYT$response.docs.headline.main[i]), " +"
+                            ))
+  for(j in 1 : length(theText))  #This loop iterates over the headline (each word)
+  {
+    articleScoreNews = articleScoreNews + Pnews_word(theText[j],TestNYT)
+    articleScoreOther = articleScoreOther + (1 - Pnews_word(theText[j],TestNYT))
+  }
+  theScoreHolderNews[i] = articleScoreNews
+  theScoreHolderOther[i] = articleScoreOther
+}
+
+# Classify the aricle as News or Other based on a given piece of information from the article.
+TestNYT$Classified = ifelse(theScoreHolderNews > theScoreHolderOther,"News","Other")
+```
+5a. Confusion Matrix for Headline
+```{r,sn}
+#Confusion Matrix
+result_headline<-table(TestNYT$NewsOrOther,TestNYT$Classified)
+confusionMatrix(result_headline)
+```
+7. Use your statistics from the last two questions to assess whether the headline or the snippet makes for a better classifier.
+
+The snippet makes for a better classifier than the headline. Assessing the accuracy of both matricies, the accuracy of the snippet is better than the headline.
+

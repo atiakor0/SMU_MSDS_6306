@@ -1,0 +1,134 @@
+---
+title: "Live Session 10"
+author: "Audrene Tiakor"
+date: "March 26, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+setwd("C:\\Users\\Audrene\\Desktop\\SMU_MSDS_PROGRAM\\Term1_spring2019\\MSDS6306\\HW\\live_session_10_11")
+```
+
+```{r message=FALSE, warning=FALSE, , include=TRUE, paged.print=FALSE}
+library(readr)
+library(dplyr)
+library(plyr)
+library(tidyr)
+library(knitr)
+library(kableExtra)
+library(stringr)
+library(caret)
+library(class)
+```
+#Questions:
+##Background: 
+Brewmeisters in Colorado and Texas have teamed up to analyze the relationship between ABV and IBU in each of their states. Use the data sets from the project to help them in their analysis. There are three main questions of interest: 1). Is there a significant linear relationship between ABV(response) and IBU(explanatory), 2). Is this relationship different between beers in Colorado and Texas and 3). Is there a significant quadratic component in this relationship for either Colorado or Texas or both?
+
+##I. KNN Regression versus Linear Regression:
+###A. Clean and prepare the data
+```{r,clean}
+#import the data:
+Beers<-read_csv('Beers.csv', col_types=cols())
+Breweries<-read_csv('Breweries.csv', col_types=cols())
+
+#create column for brewery ID that is common to both data and merge:
+BrewPub<-merge(Beers, Breweries, by.x="Brewery_id", by.y="Brew_ID", all=TRUE)
+
+#rename the column names:
+BrewPub<-rename(BrewPub, c("Name.x"="Beer", "Name.y"="Brewery", "Ounces"="OZ"))
+
+#view merged dataframe BrewPub:
+kable(BrewPub %>% head()) %>% kable_styling("striped", full_width=F)
+
+#clean State Column (get rid of extraneous white space):
+BrewPub$State<-str_trim(BrewPub$State, side=c("both"))
+
+#view BrewPub after State column cleaned:
+kable(BrewPub %>% str())
+
+#create one dataset that has only Colorado and Texas beers, call it beerCOTX:
+beerCOTX<-BrewPub %>% filter(State %in% c("TX", "CO")) %>% na.omit()
+
+#view beerCOTX:
+kable(beerCOTX %>% head())
+
+#order beerCOTX by IBU (ascending):
+beerCOTX<-beerCOTX[order(beerCOTX$IBU),]
+```
+###B. Compare two competing models: External Cross Validation
+For this assignment, we will concentrate only on the Texas data! Create a training and test set from the data (60%/40% split respectively). Print a summary of each new data frame...there should be two: TrainingTX, TestTX.
+```{r,texas}
+#create one dataset with only Texas beers and no IBU NA's:
+TXbeers<-beerCOTX %>% filter(State=="TX") %>% na.omit
+
+#create a training and test set with Texas beers data, TrainingTX and TrainTX:
+seed=123
+train_perc=.6
+train_indices=sample(seq(1, length(TXbeers), by=1), train_perc*length(TXbeers))
+
+TrainingTX= TXbeers[train_indices,]
+TestTX= TXbeers[-train_indices,]
+size_test= dim(TestTX)[1]
+
+summary(TrainingTX)
+summary(TestTX)
+```
+
+```{r,knnreg_3}
+#fit a KNN regression model to predict ABV from IBU with k=3:
+TrainTX_k_3<-knnreg(ABV~IBU, data=TrainingTX, k=3)
+preds_k_3TestTX <- predict(TrainTX_k_3, TestTX)
+TestTX$preds_k_3TestTX <-preds_k_3TestTX
+ASE_k_3_TestTX = sum((preds_k_3TestTX - TestTX$ABV)^2)/(length(TestTX$ABV))
+ASE_k_3_TestTX
+```
+
+```{r,knnreg_5}
+#fit a KNN regression model to predict ABV from IBU with k=5:
+TrainTX_k_5<-knnreg(ABV~IBU, data=TrainingTX, k=5)
+preds_k_5TestTX <- predict(TrainTX_k_5, TestTX)
+TestTX$preds_k_5TestTX <-preds_k_5TestTX
+ASE_k_5_TestTX = sum((preds_k_5TestTX - TestTX$ABV)^2)/(length(TestTX$ABV))
+ASE_k_5_TestTX
+
+```
+Judging from the ASE of the KNN k=3 model and the KNN k=5 model, the k=3 model has a smaller ASE, so I feel the KNN k=3 model is more appropriate.
+```{r,predict}
+#create a data frame with values for IBU to predict ABV:
+IBU_v<-data.frame(IBU=c(150, 170, 190))
+
+#Use the best KNN model to predict ABV for given IBU values:
+predict_ABV=predict(TrainTX_k_3, IBU_v)
+predict_ABV
+```
+
+##II. KNN Classification:
+we would like to be able to use ABV and IBU to classify beers between 2 styles: American IPA and American Pale Ale.
+
+```{r,class}
+#Filter the TXBeers data for beers in Texas that are only American IPA and American Pale Ale:
+TXbeer_AM<-TXbeers %>% filter(Style %in% c("American IPA", "American Pale Ale (APA)"))
+
+#Divide TXbeer_AM into Training and Test set (60%/40% training,test):
+seed = 101
+train_perc = .6
+train_indices = sample(seq(1,length(TXbeer_AM),by = 1), train_perc*length(TXbeer_AM))
+TrainingTX_American = TXbeer_AM[train_indices,]
+TestTX_American = TXbeer_AM[-train_indices,]
+# summary of TrainingTX and TestTX
+summary(TrainingTX_American)
+summary(TestTX_American)
+```
+```{r, class3}
+#Using class package to use ABV and IBU as explanatory features to predict style:
+resultK3 = class::knn(TrainingTX_American[,c(4,5)],TestTX_American[,c(4,5)],TrainingTX_American$Style,k=3)
+TestTX_American$StylePred3 = resultK3
+confusionMatrix(table(TestTX_American$Style,TestTX_American$StylePred3))
+```
+```{r, class5}
+classK5 = class::knn(TrainingTX_American[,c(4,5)],TestTX_American[,c(4,5)],TrainingTX_American$Style,k=5)
+TestTX_American$StylePred5 = classK5
+confusionMatrix(table(TestTX_American$Style,TestTX_American$StylePred5))
+```
+After reviewing the confusion matrix of both models, neither one is better thank the other, they both seem to perform the same. 

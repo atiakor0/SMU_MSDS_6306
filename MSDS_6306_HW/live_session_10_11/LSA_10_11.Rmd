@@ -1,0 +1,146 @@
+---
+title: "LS_Assignment_10/11"
+author: "Audrene Tiakor"
+date: "March 24, 2019"
+output: html_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+setwd("C:\\Users\\Audrene\\Desktop\\SMU_MSDS_PROGRAM\\Term1_spring2019\\MSDS6306\\HW\\live_session_10_11")
+```
+
+```{r message=FALSE, warning=FALSE, include=TRUE, paged.print=FALSE}
+library(readr) # CSV file I/O, e.g. the read_csv function
+library(dplyr) # Heavy use of this library
+library(tidyr)
+library(plyr)
+library(knitr)
+library(kableExtra)
+library(datasets) # to make region col
+library(agricolae)
+library(caret)
+library(FNN) #for knn regression
+library(class)
+```
+
+###A. Clean and Prepare The Data:
+1. Create column for brewery ID that is common to both datasets similar to what you did in the project, so we can merge!
+
+```{r, cc}
+# Read in beer and breweries data set using _csv for more tidy output
+Beers <- read_csv('Beers.csv', col_types = cols())
+Breweries <- read_csv('Breweries.csv', col_types = cols())
+
+```
+2. Merge the beer and brewery data into a single dataframe.
+```{r, merge}
+BrewPub <- merge(Beers, Breweries, by.x = "Brewery_id", by.y = "Brew_ID", all = TRUE)
+# Change variable names to more meaningful title
+
+BrewPub <- rename(BrewPub, c("Name.x"="Beer","Name.y"="Brewery",
+                   "Ounces"="OZ"))
+```
+3. Clean the State Column...get rid of extraneous white space.
+```{r, paged.print=FALSE}
+trimws(BrewPub$State)
+```
+4. Create one dataset that has only Colorado and Texas beers and no IBU NAs...name it "beerCOTX".
+```{r, cotx}
+beerCOTX<- BrewPub %>% select(Brewery_id, Beer, Beer_ID, ABV, IBU, Style, OZ, Brewery, City, State) %>% filter(State %in% c("TX","CO")) %>% na.omit()
+
+#Check for any NA's
+any(is.na(beerCOTX))
+
+#preview data
+kable(beerCOTX %>% 
+         head()) %>%
+         kable_styling("striped", full_width = F)
+
+```
+5. Order beerCOTX by IBU (ascending) ... this will be important later in graphing.
+```{r, asc}
+#sorting IBU in ascending order
+beerCOTX[]<-lapply(beerCOTX, as.character)
+beerCOTX[order(beerCOTX$IBU),]
+
+```
+###B. Compare two competing models: External Cross Validation:
+8. For this assignment we will concentrate only on the Texas data! Create a training and test set from the data (60%/40% split respectively). Print a summary of each new data frame...there should be two: TrainingTX, TestTX.
+
+```{r,TX}
+#Create data set for Texas data
+
+Texas<- beerCOTX %>% 
+  select(Brewery_id, Beer, Beer_ID, ABV, IBU, Style, OZ, Brewery, City, State) %>% filter(State == "TX") %>% na.omit()
+
+kable(Texas %>% 
+         head()) %>%
+         kable_styling("striped", full_width = F)
+
+#create training and test set for Texas, 60% train, 40% test
+set.seed(123)
+samp_size<-floor(0.60*nrow(Texas))
+train_ind<-sample(seq_len(nrow(Texas)),size=samp_size)
+TrainingTX<-Texas[train_ind,]
+TestTX<-Texas[-train_ind,]
+
+#summary for each TrainingTX and TestTX
+summary(TrainingTX)
+summary(TestTX)
+```
+
+9.Using the training data, fit a KNN regressgion model to predict ABV from IBU. You should use the knnreg function in the caret package. Fit two separate models: one with k=3 and one with k=5. (This is 2 models total).
+
+```{r,}
+#knn regression model for k=3
+fit_3<-knnreg(ABV~IBU, data=TrainingTX, k=3)
+predsTestTX.reg_3<-predict(fit_3, TestTX)
+ASEholderTestTX.reg_3 = sum((predsTestTX.reg_3 - TestTX$ABV)^2)/(length(TestTX$ABV))
+
+ASEholderTestTX.reg_3
+
+```
+```{r,k5}
+#knn regression model for k=5
+fit_5<-knnreg(ABV~IBU, data=TrainingTX, k=5)
+predsTestTX.reg_5<-predict(fit_5, TestTX)
+ASEholderTestTX.reg_5 = sum((predsTestTX.reg_5 - TestTX$ABV)^2)/(length(TestTX$ABV))
+ASEholderTestTX.reg_5
+```
+11.Now use the ASE loss function and external cross validation to provide evidence as to which model (the linear regression model from last week or the "best" KNN regression model from this week from question 10) is more appropriate.
+
+12. Use your "best" KNN regression model to predict the ABV for an IBU of 150, 170, and 190. What issue do you see with using KNN to extrapolate?
+```{r}
+
+```
+
+###KNN Classification
+13. Filter the beerCOTX dataframe for only beers that are from Texas and are American IPA and American Pale Ale.
+
+```{r,filter}
+Texas_apa_ipa<-beerCOTX %>% 
+  select(Brewery_id, Beer, Beer_ID, ABV, IBU, Style, OZ, Brewery, City, State) %>% filter(State == "TX" & Style %in% c("American IPA","American Pale Ale (APA)")) 
+
+Texas_apa_ipa$Style<-as.factor(Texas_apa_ipa$Style)
+
+kable(Texas_apa_ipa %>% 
+         head()) %>%
+         kable_styling("striped", full_width = F)
+```
+14. Divide this filtered data set into a training and test set(60%/40%, training/test split)
+```{r,split2}
+#create training and test set for Texas, 60% train, 40% test
+set.seed(123)
+
+samp_size<-floor(0.60*nrow(Texas_apa_ipa))
+train_ind<-sample(seq_len(nrow(Texas_apa_ipa)),size=samp_size)
+TrainTX_APA_IPA<-Texas_apa_ipa[train_ind,]
+TestTX_APA_IPA<-Texas_apa_ipa[-train_ind,]
+```
+15. Use the class package's knn function to build a KNN classifier with k=3 that will use ABV and IBU as features (explanatory variables) to classify Texas beers as American IPA or American Pale Ale using the Training data. Use your test set to creat a confusion table to estimate the accuracy, sensitivity and specificity of the model.
+```{r}
+results_3= class:knn(TrainTX_APA_IPA[ ,c("IBU","ABV")], TestTX_APA_IPA[ , c("IBU", "ABV")], TrainTX_APA_IPA$Style, k=3)
+```
+
+
+
